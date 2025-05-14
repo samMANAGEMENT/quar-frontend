@@ -30,10 +30,12 @@ export default function SignInForm() {
       const token = response.data.token;
       const user = response.data.user.name;
       const email = response.data.user.email;
+      const id = response.data.user.id;
 
       localStorage.setItem("token", token);
       localStorage.setItem("user", user);
       localStorage.setItem("email", email);
+      localStorage.setItem("id", id);
 
       navigate("/");
       toast.success("Inicio de sesión exitoso");
