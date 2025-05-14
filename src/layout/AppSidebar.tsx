@@ -40,7 +40,7 @@ const navItems: NavItem[] = [
   },
     {
     name: "Formulario",
-    icon: <LuCloudAlert />,
+    icon: <ListIcon />,
     subItems: [
       { name: "Crear Formulario", path: "/mesa-ayuda/formulario", pro: false },
       { name: "Gestionar Formularios", path: "/mesa-ayuda/respuestas", pro: false },
@@ -48,7 +48,7 @@ const navItems: NavItem[] = [
   },
   {
     name: "Tickets",
-    icon: <ListIcon />,
+    icon: <LuCloudAlert />,
     subItems: [
       { name: "Gestionar Tickets", path: "/mesa-ayuda/gestionar-tickets", pro: false },
       { name: "Tecnicos", path: "/mesa-ayuda/tecnicos", pro: false },

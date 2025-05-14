@@ -5,7 +5,7 @@ import { TrashBinIcon } from '../../icons';
 import axios from '../../lib/axios';
 import Input from '../../components/form/input/InputField';
 
-type FieldType = 'text' | 'number' | 'select';
+type FieldType = 'text' | 'number' | 'select' | 'email';
 
 interface FormField {
   id: string;
@@ -134,7 +134,7 @@ const Formulario: React.FC = () => {
           {/* Tipo de Dato */}
           <ComponentCard title="Tipos de Datos">
             <div className="space-y-4">
-              {(['text', 'number', 'select'] as FieldType[]).map(type => (
+              {(['text', 'number', 'select', 'email'] as FieldType[]).map(type => (
                 <div
                   key={type}
                   draggable
@@ -144,6 +144,7 @@ const Formulario: React.FC = () => {
                   {type === 'text' && '📝 Campo de Texto'}
                   {type === 'number' && '🔢 Campo Numérico'}
                   {type === 'select' && '📋 Campo Seleccionable'}
+                  {type === 'email' && '📧 Campo de Email'}
                 </div>
               ))}
             </div>

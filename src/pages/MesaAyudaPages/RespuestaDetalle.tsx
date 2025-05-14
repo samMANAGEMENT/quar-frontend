@@ -1,6 +1,8 @@
 import React, { useEffect, useRef, useState } from "react";
 import axios from "../../lib/axios";
 import DataTable, { Column } from "../../components/common/DataTable";
+import moment from 'moment';
+
 
 interface SubmissionEntry {
   label: string;
@@ -75,7 +77,7 @@ const RespuestaDetalle: React.FC<Props> = ({ respuestaId, onClose }) => {
       const entry = res.submission.find((e) => e.label === label);
       row[label] = entry?.value || "";
     });
-    row["Fecha de creación"] = res.created_at;
+    row["Fecha de creación"] = moment(res.created_at).format('DD/MM/YYYY HH:mm');
     return row;
   });
 

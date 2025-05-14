@@ -40,7 +40,12 @@ export default function Tecnicos() {
   useEffect(() => {
     const fetchTecnicos = async () => {
       try {
-        const response = await axios.get("/api/tecnicos");
+        const token = localStorage.getItem("token");
+        const response = await axios.get("/get-tecnicos", {
+          headers: {
+            "Authorization": token,
+          },
+        });
         setTecnicos(response.data);
       } catch (err: any) {
         console.error("Error al obtener técnicos:", err);
