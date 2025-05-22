@@ -164,7 +164,7 @@ const TicketModal = ({ ticketId, onClose }: TicketModalProps) => {
             <Toaster position="top-right" />
             <Dialog open={true} onClose={onClose} className="fixed z-50 inset-0 overflow-y-auto">
                 <div className="flex items-center justify-center min-h-screen px-4">
-                    <div className="fixed inset-0 bg-black opacity-30" />
+                    <div className="fixed inset-0 bg-black/30 backdrop-blur-sm" />
                     <div className="relative bg-white rounded-lg shadow-xl max-w-4xl w-full z-10 p-6">
                         <Dialog.Title className="text-xl font-semibold mb-4">Gestión de Ticket #{ticketId}</Dialog.Title>
                         {loading ? (
