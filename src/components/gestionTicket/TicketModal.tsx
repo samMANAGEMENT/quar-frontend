@@ -5,6 +5,7 @@ import Input from "../form/input/InputField";
 import Label from "../form/Label";
 import Select from "../form/Select";
 import { Toaster, toast } from "react-hot-toast";
+import DataTable from "../common/DataTable";
 
 interface TicketModalProps {
     ticketId: number;
@@ -37,10 +38,34 @@ interface Tecnico {
     created_at: string;
 }
 
+const StatusIndicator = ({ status }: { status: string | null }) => {
+    const getStatusColor = (status: string | null) => {
+        switch (status) {
+            case "Pendiente":
+                return "bg-yellow-500";
+            case "En progreso":
+                return "bg-blue-500";
+            case "Completado":
+                return "bg-green-500";
+            case "Cancelado":
+                return "bg-red-500";
+            default:
+                return "bg-gray-500";
+        }
+    };
+
+    return (
+        <div className="flex items-center gap-2">
+            <div className={`w-3 h-3 rounded-full ${getStatusColor(status)}`} />
+            <span className="text-sm">{status || "No especificado"}</span>
+        </div>
+    );
+};
+
 const TicketModal = ({ ticketId, onClose }: TicketModalProps) => {
     const [responses, setResponses] = useState<TicketResponse[]>([]);
     const [loading, setLoading] = useState(true);
-    const [newResponse, setNewResponse] = useState("");
+    const [selectedResponse, setSelectedResponse] = useState<TicketResponse | null>(null);
     const [tecnicos, setTecnicos] = useState<Tecnico[]>([]);
     const [searchTerm, setSearchTerm] = useState("");
     const [showTecnicosList, setShowTecnicosList] = useState(false);
@@ -76,16 +101,6 @@ const TicketModal = ({ ticketId, onClose }: TicketModalProps) => {
             try {
                 const response = await axios.get(`/submissions/by-template/${ticketId}`);
                 setResponses(response.data);
-                if (response.data.length > 0) {
-                    const lastResponse = response.data[response.data.length - 1];
-                    setFormValues({
-                        tecnico: lastResponse.tecnico || "",
-                        status: lastResponse.status || "",
-                        serial: lastResponse.serial || "",
-                        description: lastResponse.description || "",
-                        tipo_mantenimiento: lastResponse.tipo_mantenimiento || ""
-                    });
-                }
             } catch (error) {
                 console.error("Error al cargar las respuestas:", error);
                 toast.error("Error al cargar las respuestas del ticket");
@@ -123,26 +138,10 @@ const TicketModal = ({ ticketId, onClose }: TicketModalProps) => {
         tecnico.email.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
-    const handleSendResponse = async () => {
-        if (!newResponse.trim()) return;
-        try {
-            await axios.post(`/tickets/${ticketId}/responses`, {
-                message: newResponse,
-            });
-            setNewResponse("");
-            toast.success("Respuesta enviada correctamente");
-            // Recargar las respuestas
-            const response = await axios.get(`/submissions/by-template/${ticketId}`);
-            setResponses(response.data);
-        } catch (error) {
-            console.error("Error al enviar respuesta:", error);
-            toast.error("Error al enviar la respuesta");
-        }
-    };
-
     const handleUpdateTicket = async () => {
+        if (!selectedResponse) return;
         try {
-            await axios.patch(`/ticket-submissions/${ticketId}`, {
+            await axios.patch(`/ticket-submissions/${selectedResponse.id}`, {
                 tecnico: formValues["tecnico"],
                 status: formValues["status"],
                 serial: formValues["serial"],
@@ -153,11 +152,44 @@ const TicketModal = ({ ticketId, onClose }: TicketModalProps) => {
             // Recargar las respuestas
             const response = await axios.get(`/submissions/by-template/${ticketId}`);
             setResponses(response.data);
+            setSelectedResponse(null);
         } catch (error) {
             console.error("Error al actualizar el ticket:", error);
             toast.error("Error al actualizar el ticket");
         }
     };
+
+    const columns = [
+        {
+            header: "ID",
+            accessor: "id" as keyof TicketResponse,
+        },
+        {
+            header: "Estado",
+            accessor: "status" as keyof TicketResponse,
+            cellRenderer: (value: string | null) => <StatusIndicator status={value} />
+        },
+        {
+            header: "Técnico",
+            accessor: "tecnico" as keyof TicketResponse,
+            cellRenderer: (value: string | null) => value || "No asignado"
+        },
+        {
+            header: "Tipo Mantenimiento",
+            accessor: "tipo_mantenimiento" as keyof TicketResponse,
+            cellRenderer: (value: string | null) => value || "No especificado"
+        },
+        {
+            header: "Fecha de creación",
+            accessor: "created_at" as keyof TicketResponse,
+            cellRenderer: (value: string) => new Date(value).toLocaleString()
+        },
+        {
+            header: "Fecha de actualización",
+            accessor: "updated_at" as keyof TicketResponse,
+            cellRenderer: (value: string) => new Date(value).toLocaleString()
+        }
+    ];
 
     return (
         <>
@@ -165,169 +197,130 @@ const TicketModal = ({ ticketId, onClose }: TicketModalProps) => {
             <Dialog open={true} onClose={onClose} className="fixed z-50 inset-0 overflow-y-auto">
                 <div className="flex items-center justify-center min-h-screen px-4">
                     <div className="fixed inset-0 bg-black/30 backdrop-blur-sm" />
-                    <div className="relative bg-white rounded-lg shadow-xl max-w-4xl w-full z-10 p-6">
-                        <Dialog.Title className="text-xl font-semibold mb-4">Gestión de Ticket #{ticketId}</Dialog.Title>
+                    <div className="relative bg-white rounded-lg shadow-xl max-w-6xl w-full z-10 p-6">
+                        <Dialog.Title className="text-xl font-semibold mb-4">Formulario #{ticketId}</Dialog.Title>
                         {loading ? (
                             <p>Cargando...</p>
                         ) : (
                             <div className="mt-4 space-y-6">
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    {/* Campos específicos para la gestión */}
-                                    <div className="space-y-2">
-                                        <Label>Técnico Asignado</Label>
-                                        <div className="relative">
-                                            <input
-                                                type="text"
-                                                value={searchTerm}
-                                                onChange={(e) => handleTecnicoSearch(e.target.value)}
-                                                placeholder="Buscar técnico..."
-                                                onFocus={() => setShowTecnicosList(true)}
-                                                className="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/20 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
-                                            />
-                                            {showTecnicosList && searchTerm && (
-                                                <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-auto">
-                                                    {filteredTecnicos.length > 0 ? (
-                                                        filteredTecnicos.map((tecnico) => (
-                                                            <div
-                                                                key={tecnico.id}
-                                                                className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
-                                                                onClick={() => handleTecnicoSelect(tecnico)}
-                                                            >
-                                                                <div className="font-medium">{tecnico.name}</div>
-                                                                <div className="text-sm text-gray-500">{tecnico.email}</div>
-                                                            </div>
-                                                        ))
-                                                    ) : (
-                                                        <div className="px-4 py-2 text-gray-500">No se encontraron técnicos</div>
+                                {!selectedResponse ? (
+                                    <DataTable
+                                        columns={columns}
+                                        data={responses}
+                                        className="cursor-pointer"
+                                        onRowClick={(row) => {
+                                            setSelectedResponse(row);
+                                            setFormValues({
+                                                tecnico: row.tecnico || "",
+                                                status: row.status || "",
+                                                serial: row.serial || "",
+                                                description: row.description || "",
+                                                tipo_mantenimiento: row.tipo_mantenimiento || ""
+                                            });
+                                        }}
+                                    />
+                                ) : (
+                                    <div className="space-y-6">
+                                        <div className="flex justify-between items-center">
+                                            <h3 className="text-lg font-semibold">Detalles del Ticket #{selectedResponse.id}</h3>
+                                            <button
+                                                onClick={() => setSelectedResponse(null)}
+                                                className="text-gray-500 hover:text-gray-700"
+                                            >
+                                                Volver a la lista
+                                            </button>
+                                        </div>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div className="space-y-2">
+                                                <Label>Técnico Asignado</Label>
+                                                <div className="relative">
+                                                    <input
+                                                        type="text"
+                                                        value={searchTerm}
+                                                        onChange={(e) => handleTecnicoSearch(e.target.value)}
+                                                        placeholder="Buscar técnico..."
+                                                        onFocus={() => setShowTecnicosList(true)}
+                                                        className="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/20 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
+                                                    />
+                                                    {showTecnicosList && searchTerm && (
+                                                        <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-auto">
+                                                            {filteredTecnicos.length > 0 ? (
+                                                                filteredTecnicos.map((tecnico) => (
+                                                                    <div
+                                                                        key={tecnico.id}
+                                                                        className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
+                                                                        onClick={() => handleTecnicoSelect(tecnico)}
+                                                                    >
+                                                                        <div className="font-medium">{tecnico.name}</div>
+                                                                        <div className="text-sm text-gray-500">{tecnico.email}</div>
+                                                                    </div>
+                                                                ))
+                                                            ) : (
+                                                                <div className="px-4 py-2 text-gray-500">No se encontraron técnicos</div>
+                                                            )}
+                                                        </div>
                                                     )}
                                                 </div>
-                                            )}
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label>Estado</Label>
+                                                <Select
+                                                    options={[
+                                                        { value: "Pendiente", label: "Pendiente" },
+                                                        { value: "En progreso", label: "En progreso" },
+                                                        { value: "Completado", label: "Completado" },
+                                                        { value: "Cancelado", label: "Cancelado" }
+                                                    ]}
+                                                    onChange={(value) => handleInputChange("status", value)}
+                                                    placeholder="Seleccione el estado"
+                                                    defaultValue={formValues["status"]}
+                                                />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label>Serial</Label>
+                                                <Input
+                                                    type="text"
+                                                    value={formValues["serial"]}
+                                                    onChange={(e) => handleInputChange("serial", e.target.value)}
+                                                    placeholder="Ingrese el serial del equipo"
+                                                />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label>Tipo de Mantenimiento</Label>
+                                                <Select
+                                                    options={[
+                                                        { value: "PREVENTIVO", label: "Preventivo" },
+                                                        { value: "CORRECTIVO", label: "Correctivo" },
+                                                        { value: "PREDICTIVO", label: "Predictivo" }
+                                                    ]}
+                                                    onChange={(value) => handleInputChange("tipo_mantenimiento", value)}
+                                                    placeholder="Seleccione el tipo de mantenimiento"
+                                                    defaultValue={formValues["tipo_mantenimiento"]}
+                                                />
+                                            </div>
+                                            <div className="col-span-2 space-y-2">
+                                                <Label>Descripción</Label>
+                                                <textarea
+                                                    className="w-full border rounded p-2"
+                                                    value={formValues["description"]}
+                                                    onChange={(e) => handleInputChange("description", e.target.value)}
+                                                    placeholder="Ingrese la descripción del problema"
+                                                    rows={3}
+                                                />
+                                            </div>
+                                        </div>
+                                        <div className="flex justify-end gap-2">
+                                            <button
+                                                onClick={handleUpdateTicket}
+                                                className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+                                            >
+                                                Actualizar Ticket
+                                            </button>
                                         </div>
                                     </div>
-                                    <div className="space-y-2">
-                                        <Label>Estado</Label>
-                                        <Select
-                                            options={[
-                                                { value: "Pendiente", label: "Pendiente" },
-                                                { value: "En progreso", label: "En progreso" },
-                                                { value: "Completado", label: "Completado" },
-                                                { value: "Cancelado", label: "Cancelado" }
-                                            ]}
-                                            onChange={(value) => handleInputChange("status", value)}
-                                            placeholder="Seleccione el estado"
-                                            defaultValue={formValues["status"]}
-                                        />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label>Serial</Label>
-                                        <Input
-                                            type="text"
-                                            value={formValues["serial"]}
-                                            onChange={(e) => handleInputChange("serial", e.target.value)}
-                                            placeholder="Ingrese el serial del equipo"
-                                        />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label>Tipo de Mantenimiento</Label>
-                                        <Select
-                                            options={[
-                                                { value: "PREVENTIVO", label: "Preventivo" },
-                                                { value: "CORRECTIVO", label: "Correctivo" },
-                                                { value: "PREDICTIVO", label: "Predictivo" }
-                                            ]}
-                                            onChange={(value) => handleInputChange("tipo_mantenimiento", value)}
-                                            placeholder="Seleccione el tipo de mantenimiento"
-                                            defaultValue={formValues["tipo_mantenimiento"]}
-                                        />
-                                    </div>
-                                    <div className="col-span-2 space-y-2">
-                                        <Label>Descripción</Label>
-                                        <textarea
-                                            className="w-full border rounded p-2"
-                                            value={formValues["description"]}
-                                            onChange={(e) => handleInputChange("description", e.target.value)}
-                                            placeholder="Ingrese la descripción del problema"
-                                            rows={3}
-                                        />
-                                    </div>
-                                </div>
-
-                                <div className="mt-6">
-                                    <h4 className="font-semibold mb-2">Historial de Respuestas:</h4>
-                                    {responses.length === 0 ? (
-                                        <p className="text-gray-500">Aún no hay respuestas.</p>
-                                    ) : (
-                                        <div className="space-y-4">
-                                            {responses.map((response) => (
-                                                <div key={response.id} className="border rounded-lg p-4 bg-gray-50">
-                                                    <div className="grid grid-cols-2 gap-4">
-                                                        {response.submission.map((sub, index) => (
-                                                            <div key={index} className="space-y-1">
-                                                                <span className="text-sm font-medium text-gray-500">{sub.label}:</span>
-                                                                <p className="text-sm">{sub.value || "No especificado"}</p>
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                    <div className="mt-2 pt-2 border-t border-gray-200">
-                                                        <div className="grid grid-cols-2 gap-4 text-sm">
-                                                            <div>
-                                                                <span className="font-medium text-gray-500">Técnico:</span>
-                                                                <p>{response.tecnico || "No asignado"}</p>
-                                                            </div>
-                                                            <div>
-                                                                <span className="font-medium text-gray-500">Estado:</span>
-                                                                <p>{response.status || "No especificado"}</p>
-                                                            </div>
-                                                            <div>
-                                                                <span className="font-medium text-gray-500">Serial:</span>
-                                                                <p>{response.serial || "No especificado"}</p>
-                                                            </div>
-                                                            <div>
-                                                                <span className="font-medium text-gray-500">Tipo de Mantenimiento:</span>
-                                                                <p>{response.tipo_mantenimiento || "No especificado"}</p>
-                                                            </div>
-                                                        </div>
-                                                        {response.description && (
-                                                            <div className="mt-2">
-                                                                <span className="font-medium text-gray-500">Descripción:</span>
-                                                                <p className="text-sm">{response.description}</p>
-                                                            </div>
-                                                        )}
-                                                        <div className="mt-2 text-xs text-gray-400">
-                                                            {new Date(response.created_at).toLocaleString()}
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    )}
-                                </div>
-
-                                <div className="mt-4">
-                                    <textarea
-                                        className="w-full border rounded p-2"
-                                        placeholder="Escribe una respuesta..."
-                                        value={newResponse}
-                                        onChange={(e) => setNewResponse(e.target.value)}
-                                    />
-                                    <div className="flex justify-end gap-2 mt-2">
-                                        <button
-                                            onClick={handleSendResponse}
-                                            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-                                        >
-                                            Enviar Respuesta
-                                        </button>
-                                        <button
-                                            onClick={handleUpdateTicket}
-                                            className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
-                                        >
-                                            Actualizar Ticket
-                                        </button>
-                                    </div>
-                                </div>
+                                )}
                             </div>
                         )}
-
                         <button
                             onClick={onClose}
                             className="absolute top-2 right-2 text-gray-500 hover:text-gray-700 text-xl"

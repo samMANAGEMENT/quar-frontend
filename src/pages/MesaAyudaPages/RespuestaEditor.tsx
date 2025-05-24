@@ -4,7 +4,7 @@ import { TrashBinIcon } from '../../icons';
 import axios from '../../lib/axios';
 import Input from '../../components/form/input/InputField';
 
-type FieldType = 'text' | 'number' | 'select';
+type FieldType = 'text' | 'number' | 'select' | 'email';
 
 interface RespuestaEditorProps {
   respuestaId: number | null;
@@ -15,7 +15,7 @@ interface FormField {
   id: string;
   type: FieldType;
   label: string;
-  defaultValue: string;
+  defaultValue: string | null;
   options?: string[];
 }
 
@@ -73,7 +73,7 @@ const RespuestaEditor: React.FC<RespuestaEditorProps> = ({ respuestaId, onClose 
         id,
         type,
         label: '',
-        defaultValue: '',
+        defaultValue: null,
         options: type === 'select' ? [] : undefined,
       },
     ]);
@@ -122,7 +122,7 @@ const RespuestaEditor: React.FC<RespuestaEditorProps> = ({ respuestaId, onClose 
       >
         <div className="flex-1 space-y-3">
           <div className="space-y-2">
-            {(['text', 'number', 'select'] as FieldType[]).map((type) => (
+            {(['text', 'number', 'select', 'email'] as FieldType[]).map((type) => (
               <div
                 key={type}
                 draggable
@@ -132,6 +132,7 @@ const RespuestaEditor: React.FC<RespuestaEditorProps> = ({ respuestaId, onClose 
                 {type === 'text' && '📝 Campo de Texto'}
                 {type === 'number' && '🔢 Campo Numérico'}
                 {type === 'select' && '📋 Campo Seleccionable'}
+                {type === 'email' && '📧 Campo de Email'}
               </div>
             ))}
           </div>
@@ -181,6 +182,7 @@ const RespuestaEditor: React.FC<RespuestaEditorProps> = ({ respuestaId, onClose 
                         type="text"
                         className="w-full mb-3 p-2 border rounded focus:outline-none"
                         placeholder="Opciones separadas por coma"
+                        value={(field.options || []).join(', ')}
                         onChange={(e) => {
                           const options = e.target.value.split(',').map((opt) => opt.trim());
                           handleFieldChange(field.id, { options });

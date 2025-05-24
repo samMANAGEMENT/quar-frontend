@@ -7,6 +7,7 @@ import TicketModal from "../../components/gestionTicket/TicketModal";
 interface Ticket {
   id: number;
   title: string;
+  name: string;
   created_at: string;
   status: string;
 }
@@ -45,7 +46,7 @@ const GestionarTickets = () => {
               className="relative cursor-pointer w-full sm:w-[250px] bg-white rounded-lg shadow-md hover:shadow-xl transition-shadow duration-300 p-6 flex flex-col items-center text-center border border-gray-200"
             >
               <HiClipboardList className="text-blue-400 text-6xl mb-4 hover:text-blue-600" />
-              <h3 className="text-xl font-semibold">Ticket #{ticket.id}</h3>
+              <h3 className="text-xl font-semibold">{ticket.name}</h3>
               <p className="text-gray-500 mt-1 text-sm">{ticket.title}</p>
               <span className={`mt-2 px-3 py-1 rounded-full text-sm ${ticket.status === 'abierto' ? 'bg-green-100 text-green-800' :
                   ticket.status === 'cerrado' ? 'bg-red-100 text-red-800' :
