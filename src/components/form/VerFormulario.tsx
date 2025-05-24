@@ -66,9 +66,6 @@ const VerFormulario: React.FC = () => {
             // Mostrar notificación de éxito
             toast.success('Formulario enviado correctamente');
 
-            console.log('JSON enviado:', JSON.stringify({ formId, submission: submissionArray }, null, 2));
-            console.log('Respuesta del servidor:', response.data);
-
             // Limpiar los campos del formulario
             setFormValues({});  // Vaciar todos los campos visualmente
         } catch (error) {
