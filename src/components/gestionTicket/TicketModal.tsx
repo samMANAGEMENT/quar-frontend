@@ -230,6 +230,20 @@ const TicketModal = ({ ticketId, onClose }: TicketModalProps) => {
                                                 Volver a la lista
                                             </button>
                                         </div>
+
+                                        {/* Sección de información del formulario */}
+                                        <div className="bg-gray-50 rounded-lg p-6 mb-6">
+                                            <h4 className="text-lg font-semibold mb-4 text-gray-800">Respuesta del Formulario</h4>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                {selectedResponse.submission.map((item, index) => (
+                                                    <div key={index} className="bg-white p-4 rounded-lg shadow-sm">
+                                                        <p className="text-sm font-medium text-gray-500 mb-1">{item.label}</p>
+                                                        <p className="text-base text-gray-800">{item.value}</p>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                             <div className="space-y-2">
                                                 <Label>Técnico Asignado</Label>

@@ -19,9 +19,13 @@ interface FormField {
   options?: string[];
 }
 
+interface TemplateResponse {
+  name: string;
+  fields: FormField[];
+}
+
 const RespuestaEditor: React.FC<RespuestaEditorProps> = ({ respuestaId, onClose }) => {
   const [formFields, setFormFields] = useState<FormField[]>([]);
-  const [jsonOutput, setJsonOutput] = useState<string>('');
   const [formName, setFormName] = useState<string>('');
   const modalRef = useRef<HTMLDivElement>(null);
 
@@ -30,7 +34,7 @@ const RespuestaEditor: React.FC<RespuestaEditorProps> = ({ respuestaId, onClose 
       if (!respuestaId) return;
 
       try {
-        const response = await axios.get(`/templates/${respuestaId}`);
+        const response = await axios.get<TemplateResponse>(`/templates/${respuestaId}`);
         const { name, fields } = response.data;
 
         setFormName(name);
@@ -90,9 +94,6 @@ const RespuestaEditor: React.FC<RespuestaEditorProps> = ({ respuestaId, onClose 
   };
 
   const exportJSON = async () => {
-    const json = JSON.stringify(formFields, null, 2);
-    setJsonOutput(json);
-
     if (!respuestaId) {
       console.error('No se recibió un ID válido para actualizar el formulario.');
       return;
@@ -104,6 +105,7 @@ const RespuestaEditor: React.FC<RespuestaEditorProps> = ({ respuestaId, onClose 
         fields: formFields,
       });
 
+      console.log(response.data);
       const formId = respuestaId;
 
       window.open(`/ver-formulario?id=${formId}`, '_blank');
@@ -126,7 +128,7 @@ const RespuestaEditor: React.FC<RespuestaEditorProps> = ({ respuestaId, onClose 
               <div
                 key={type}
                 draggable
-                onDragStart={(e) => e.dataTransfer.setData('type', type)}
+                onDragStart={(e: React.DragEvent<HTMLDivElement>) => e.dataTransfer.setData('type', type)}
                 className="bg-white hover:bg-blue-200 p-2 rounded-lg text-center cursor-grab font-medium transition shadow-sm"
               >
                 {type === 'text' && '📝 Campo de Texto'}
@@ -140,14 +142,14 @@ const RespuestaEditor: React.FC<RespuestaEditorProps> = ({ respuestaId, onClose 
           <ComponentCard title="Formulario">
             <Input
               value={formName ?? ''}
-              onChange={(e) => setFormName(e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormName(e.target.value)}
               className="mx-auto"
               placeholder="Nombre del Formulario"
             />
             <div
               className="min-h-[300px] border border-dashed border-gray-400 p-4 rounded-lg bg-white"
-              onDragOver={(e) => e.preventDefault()}
-              onDrop={(e) => {
+              onDragOver={(e: React.DragEvent<HTMLDivElement>) => e.preventDefault()}
+              onDrop={(e: React.DragEvent<HTMLDivElement>) => {
                 const type = e.dataTransfer.getData('type') as FieldType;
                 handleDrop(type);
               }}
@@ -173,7 +175,7 @@ const RespuestaEditor: React.FC<RespuestaEditorProps> = ({ respuestaId, onClose 
                     className="w-full mb-3 p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
                     placeholder="Etiqueta del campo"
                     value={field.label ?? ''}
-                    onChange={(e) => handleFieldChange(field.id, { label: e.target.value })}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleFieldChange(field.id, { label: e.target.value })}
                   />
 
                   {field.type === 'select' ? (
@@ -183,12 +185,18 @@ const RespuestaEditor: React.FC<RespuestaEditorProps> = ({ respuestaId, onClose 
                         className="w-full mb-3 p-2 border rounded focus:outline-none"
                         placeholder="Opciones separadas por coma"
                         value={(field.options || []).join(', ')}
-                        onChange={(e) => {
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                           const options = e.target.value.split(',').map((opt) => opt.trim());
                           handleFieldChange(field.id, { options });
                         }}
                       />
-                      <select className="w-full p-2 border rounded text-gray-700 bg-white">
+                      <select 
+                        className="w-full p-2 border rounded text-gray-700 bg-white"
+                        value={field.defaultValue ?? ''}
+                        onChange={(e: React.ChangeEvent<HTMLSelectElement>) => 
+                          handleFieldChange(field.id, { defaultValue: e.target.value })
+                        }
+                      >
                         {(field.options ?? []).map((opt) => (
                           <option key={opt} value={opt}>
                             {opt}
@@ -202,7 +210,7 @@ const RespuestaEditor: React.FC<RespuestaEditorProps> = ({ respuestaId, onClose 
                       className="w-full p-2 border rounded focus:outline-none"
                       placeholder={`Valor por defecto (${field.type})`}
                       value={field.defaultValue ?? ''}
-                      onChange={(e) =>
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                         handleFieldChange(field.id, { defaultValue: e.target.value })
                       }
                     />

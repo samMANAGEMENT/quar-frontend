@@ -80,7 +80,7 @@ export default function Tecnicos() {
     {
       header: "Acciones",
       accessor: "id" as keyof Tecnico,
-      cellRenderer: (value: number, row: Tecnico) => (
+      cellRenderer: (_: number, row: Tecnico) => (
         <Button
           size="xs"
           variant="outline"
