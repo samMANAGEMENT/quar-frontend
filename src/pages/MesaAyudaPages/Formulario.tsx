@@ -166,7 +166,7 @@ const Formulario: React.FC = () => {
               {formFields.length === 0 && (
                 <p className="text-gray-400 text-center">Arrastra campos desde arriba</p>
               )}
-              {formFields.map((field, index) => (
+              {formFields.map((field) => (
                 <div
                   id={`field-${field.id}`}
                   key={field.id}

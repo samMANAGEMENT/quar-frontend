@@ -62,7 +62,7 @@ const VerFormulario: React.FC = () => {
                 ticket_template_id: formId,
                 submission: submissionArray,
             });
-            
+            console.log(response.data);
             // Mostrar notificación de éxito
             toast.success('Formulario enviado correctamente');
 
